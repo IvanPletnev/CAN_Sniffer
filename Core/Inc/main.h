@@ -38,7 +38,7 @@ extern "C" {
 /* USER CODE BEGIN ET */
 typedef struct _canRxMessage {
 	CAN_RxHeaderTypeDef *header;
-	uint8_t data[8];
+	uint8_t *data;
 }canRxMessage;
 /* USER CODE END ET */
 
