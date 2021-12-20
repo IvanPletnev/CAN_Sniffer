@@ -492,6 +492,7 @@ void usbCdcTask(void const * argument)
 
 			USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*) &buf[0], numBytes);
 			USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+			osMailFree(canRxQueueHandle, canMessage);
 		}
 
   }
