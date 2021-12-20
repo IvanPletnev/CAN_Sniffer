@@ -406,14 +406,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	CAN_RxHeaderTypeDef *pHeader;
 	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 	canMessage = osMailAlloc(canRxQueueHandle, 0);
-	pHeader = canMessage->header;
 
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
-		/* Reception Error */
 		Error_Handler();
 	} else {
-//		memcpy((uint8_t*)pHeader, (const uint8_t*) &RxHeader, sizeof(CAN_RxHeaderTypeDef));
-//		memcpy(canMessage->data, RxData, 8);
 		canMessage->header = &RxHeader;
 		canMessage->data = RxData;
 		osMailPut(canRxQueueHandle, canMessage);
