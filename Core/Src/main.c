@@ -403,7 +403,7 @@ uint8_t hexascii_to_halfbyte(uint8_t _ascii) {
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
 	canRxMessage *canMessage;
-
+	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 	canMessage = osMailAlloc(canRxQueueHandle, 0);
 
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
