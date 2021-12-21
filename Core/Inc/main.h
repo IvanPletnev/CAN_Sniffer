@@ -56,7 +56,7 @@ typedef struct _canRxMessage {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+uint8_t hexascii_to_halfbyte(uint8_t _ascii);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

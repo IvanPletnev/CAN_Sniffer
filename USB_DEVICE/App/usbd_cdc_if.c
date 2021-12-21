@@ -22,7 +22,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "main.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,6 +34,12 @@ extern uint8_t interfaceState;
 const char message1[] = "V0101\r";
 const char message2[] = "vSTM32\r";
 const char message3[] = "\r";
+
+uint32_t TxMailbox;
+
+extern CAN_HandleTypeDef hcan1;
+extern CAN_TxHeaderTypeDef TxHeader;
+extern uint8_t TxData[8];
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE END PV */
@@ -266,21 +272,19 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
 	uint32_t num_bytes;
-//	uint8_t res;
-//	uint8_t tmp_byte;
+	uint8_t i ;
+	uint8_t tmp_byte ;
 //
 
 	switch (Buf[0]) {
 	case 'V':
 		strcpy((char*)UserTxBufferFS, message1);
 		num_bytes = sizeof(message1) - 1;
-//		num_bytes = sprintf((char*) UserTxBufferFS, message1);
 		break;
 
 	case 'v':
 		strcpy((char*)UserTxBufferFS, message2);
 		num_bytes = sizeof(message2) - 1;
-//		num_bytes = sprintf((char*) UserTxBufferFS, "vSTM32\r");
 		break;
 	case 'O':
 		interfaceState = 1;
@@ -294,10 +298,36 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		strcpy((char*)UserTxBufferFS, message3);
 		num_bytes = sizeof(message3) - 1;
 		break;
+	case 't':
+		i = 1;
+		TxHeader.StdId = hexascii_to_halfbyte(Buf[i++]);
+		TxHeader.StdId = (TxHeader.StdId << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxHeader.StdId = (TxHeader.StdId << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxHeader.DLC = hexascii_to_halfbyte(Buf[i++]);
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[0] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[1] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[2] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[3] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[4] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[5] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[6] = tmp_byte;
+		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
+		TxData[7] = tmp_byte;
+
+		HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
+		strcpy((char*)UserTxBufferFS, message3);
+		num_bytes = sizeof(message3) - 1;
+		break;
 	default:
 		strcpy((char*)UserTxBufferFS, message3);
 		num_bytes = sizeof(message3) - 1;
-//		num_bytes = sprintf((char*) UserTxBufferFS, "\r");
 		break;
 	}
 	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*) &UserTxBufferFS[0], num_bytes);

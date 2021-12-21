@@ -403,7 +403,6 @@ uint8_t hexascii_to_halfbyte(uint8_t _ascii) {
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
 	canRxMessage *canMessage;
-	CAN_RxHeaderTypeDef *pHeader;
 	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 	canMessage = osMailAlloc(canRxQueueHandle, 0);
 
@@ -490,8 +489,10 @@ void usbCdcTask(void const * argument)
 			buf[numBytes++] = halfbyte_to_hexascii((time)>>0);
 			buf[numBytes++] = '\r';
 
-			USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*) &buf[0], numBytes);
-			USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+			if (interfaceState){
+				USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*) &buf[0], numBytes);
+				USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+			}
 			osMailFree(canRxQueueHandle, canMessage);
 		}
 
