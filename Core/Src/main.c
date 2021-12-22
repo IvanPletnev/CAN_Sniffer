@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 #include "string.h"
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,7 +36,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define MAIL_SIZE 16
+#define MAIL_SIZE 32
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,6 +53,7 @@ UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 osThreadId usbCdcHandle;
+osThreadId canTxHandle;
 /* USER CODE BEGIN PV */
 
 CAN_TxHeaderTypeDef   TxHeader;
@@ -62,6 +64,7 @@ uint32_t              TxMailbox;
 canRxMessage canRxMsg;
 
 osMailQId canRxQueueHandle;
+osMailQId canTxQueueHandle;
 uint8_t interfaceState = 1;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -75,6 +78,7 @@ static void MX_CAN1_Init(void);
 static void MX_TIM1_Init(void);
 void StartDefaultTask(void const * argument);
 void usbCdcTask(void const * argument);
+void canTxTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -135,7 +139,7 @@ int main(void)
   }
 
   HAL_CAN_Start(&hcan1);
-  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+  HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING| CAN_IT_TX_MAILBOX_EMPTY | CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE);
 
   HAL_TIM_Base_Start(&htim1);
 
@@ -156,6 +160,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
 	osMailQDef(canRxQ, MAIL_SIZE, canRxMessage);
 	canRxQueueHandle = osMailCreate(osMailQ(canRxQ), NULL);
+	osMailQDef(canTxQ, MAIL_SIZE, canRxMessage);
+	canRxQueueHandle = osMailCreate(osMailQ(canTxQ), NULL);
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
@@ -167,6 +173,10 @@ int main(void)
   /* definition and creation of usbCdc */
   osThreadDef(usbCdc, usbCdcTask, osPriorityNormal, 0, 256);
   usbCdcHandle = osThreadCreate(osThread(usbCdc), NULL);
+
+  /* definition and creation of canTx */
+  osThreadDef(canTx, canTxTask, osPriorityNormal, 0, 256);
+  canTxHandle = osThreadCreate(osThread(canTx), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -252,7 +262,7 @@ static void MX_CAN1_Init(void)
   hcan1.Init.TimeSeg1 = CAN_BS1_15TQ;
   hcan1.Init.TimeSeg2 = CAN_BS2_5TQ;
   hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoBusOff = ENABLE;
   hcan1.Init.AutoWakeUp = DISABLE;
   hcan1.Init.AutoRetransmission = DISABLE;
   hcan1.Init.ReceiveFifoLocked = DISABLE;
@@ -415,6 +425,44 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	}
 }
 
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
+{
+	uint32_t error;
+
+	error = HAL_CAN_GetError(hcan);
+	printf("Error # %8lX detected\r\n", error);
+	HAL_CAN_ResetError(hcan);
+}
+
+int _write(int file, char *ptr, int len)
+{
+	int DataIdx;
+
+	for (DataIdx = 0; DataIdx < len; DataIdx++)
+	{
+		ITM_SendChar(*ptr++);
+	}
+	return len;
+}
+
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+	HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	puts("Mailbox 0 TX complete\r\n");
+}
+
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+	HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	puts("Mailbox 1 TX complete\r\n");
+}
+
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+	HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	puts("Mailbox 2 TX complete\r\n");
+
+}
 
 /* USER CODE END 4 */
 
@@ -494,10 +542,29 @@ void usbCdcTask(void const * argument)
 				USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 			}
 			osMailFree(canRxQueueHandle, canMessage);
+			osThreadYield();
 		}
 
   }
   /* USER CODE END usbCdcTask */
+}
+
+/* USER CODE BEGIN Header_canTxTask */
+/**
+* @brief Function implementing the canTx thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_canTxTask */
+void canTxTask(void const * argument)
+{
+  /* USER CODE BEGIN canTxTask */
+
+  for(;;)
+  {
+	  osDelay(1);
+  }
+  /* USER CODE END canTxTask */
 }
 
 /**

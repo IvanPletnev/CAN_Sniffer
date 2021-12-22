@@ -40,6 +40,11 @@ typedef struct _canRxMessage {
 	CAN_RxHeaderTypeDef *header;
 	uint8_t *data;
 }canRxMessage;
+
+typedef struct _canTxMessage {
+	CAN_TxHeaderTypeDef *header;
+	uint8_t *data;
+}canTxMessage;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

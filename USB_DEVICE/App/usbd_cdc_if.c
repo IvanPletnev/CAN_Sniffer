@@ -320,7 +320,6 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		TxData[6] = tmp_byte;
 		tmp_byte = hexascii_to_halfbyte(Buf[i++]); tmp_byte = (tmp_byte << 4) + hexascii_to_halfbyte(Buf[i++]);
 		TxData[7] = tmp_byte;
-
 		HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
 		strcpy((char*)UserTxBufferFS, message3);
 		num_bytes = sizeof(message3) - 1;
